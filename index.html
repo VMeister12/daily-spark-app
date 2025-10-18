@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Motivation</title>
+    <!-- Link to the Web App Manifest for PWA features -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a relaxing sunrise/sunset gradient background and nice typography */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* NEW RELAXING GRADIENT: Peach, Coral, and Lavender */
+            background: linear-gradient(135deg, #FAD7A1 0%, #E1C3C5 50%, #B39CD0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Add padding to account for the fixed header */
+            padding-top: 6rem; 
+        }
+
+        /* --- Custom Style for Navigation Links --- */
+        .nav-link {
+            /* Font similar to Apple's system fonts */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            font-size: 1.5rem; /* Slightly smaller than before for a tab look */
+            font-weight: 800; 
+            line-height: 1.2;
+            /* Changed color to white */
+            color: rgba(255, 255, 255, 0.9); 
+            transition: all 0.2s ease;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4); /* Subtle shadow for contrast */
+            cursor: pointer;
+        }
+
+        .nav-link.active {
+            color: white; /* Bright white for active state */
+            font-weight: 900;
+            transform: scale(1.05);
+            /* Add a subtle underline effect for the active link */
+            border-bottom: 3px solid white; 
+        }
+
+        .nav-link:not(.active):hover {
+            color: rgba(255, 255, 255, 1);
+        }
+        /* --- End Custom Style for Navigation Links --- */
+
+
+        /* Custom hover effect for the button */
+        .btn-primary {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            /* Updated shadow color to match the new button color */
+            box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3), 0 4px 6px -4px rgba(139, 92, 246, 0.1); /* purple-500 shadow */
+        }
+
+        /* Card visibility transition */
+        .card-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    </style>
+
+    <!-- Register the Service Worker for PWA features -->
+    <script>
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+              .then(registration => console.log('SW registered:', registration.scope))
+              .catch(error => console.log('SW registration failed:', error));
+          });
+        }
+    </script>
+</head>
+<body class="p-4">
+
+    <!-- Fixed Header/Navigation Tabs -->
+    <header class="fixed top-0 left-0 w-full py-4 px-6 md:px-10 z-10 flex justify-center space-x-6">
+        
+        <!-- Quote Link (Tab 1) -->
+        <a id="nav-quote" class="nav-link px-2 pb-1 active" onclick="showView('quote')">
+            Quote
+        </a>
+        
+        <!-- Reflection Link (Tab 2) -->
+        <a id="nav-reflect" class="nav-link px-2 pb-1" onclick="showView('reflect')">
+            Reflect
+        </a>
+    </header>
+
+    <!-- Content Container (Wrapper for card transitions) -->
+    <div class="max-w-lg w-full">
+
+        <!-- Tab 1: Quote Card (Initial View) -->
+        <div id="quote-card" class="card-transition bg-white p-8 md:p-12 rounded-xl shadow-2xl w-full text-center">
+            
+            <p class="text-xs font-semibold text-purple-600 uppercase tracking-widest mb-4">Your Dose of Inspiration</p>
+
+            <!-- Quote Text -->
+            <blockquote class="text-2xl md:text-3xl font-extrabold text-gray-800 leading-snug italic mb-6">
+                <span id="quote-text">Loading motivation...</span>
+            </blockquote>
+
+            <!-- Quote Author -->
+            <p id="quote-author" class="text-lg font-medium text-gray-500 mb-8">— Author</p>
+
+            <!-- New Quote Button -->
+            <button id="new-quote-btn" class="btn-primary bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full focus:outline-none focus:ring-4 focus:ring-purple-300">
+                Get a New Quote
+            </button>
+        </div>
+
+        <!-- Tab 2: Reflection Card (Initially Hidden) -->
+        <div id="reflection-card" class="card-transition bg-white p-8 md:p-12 rounded-xl shadow-2xl w-full hidden opacity-0 translate-y-2">
+            
+            <p class="text-xs font-semibold text-purple-600 uppercase tracking-widest mb-4">Daily Reflection Prompt</p>
+
+            <h2 class="text-2xl md:text-3xl font-extrabold text-gray-800 mb-6" id="reflection-prompt">
+                What is one thing I can do today to move closer to my biggest goal?
+            </h2>
+
+            <!-- Note about journaling -->
+            <p class="text-sm text-gray-500 mb-8">
+                Take a moment to write down your answer, then click below for a fresh perspective.
+            </p>
+            
+            <!-- New Prompt Button -->
+            <button id="new-prompt-btn" class="btn-primary bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full focus:outline-none focus:ring-4 focus:ring-purple-300">
+                New Prompt
+            </button>
+        </div>
+
+    </div> <!-- End Content Container -->
+
+    <script>
+        // --- 1. Data Definitions ---
+        
+        // Inspirational Quotes Data
+        // NOTE: This array needs to be expanded to over 1000 items to meet the initial requirement.
+        const quotes = [
+            { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+            { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+            { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+            { text: "Believe you can and you’re halfway there.", author: "Theodore Roosevelt" },
+            { text: "Strive not to be a success, but rather to be of value.", author: "Albert Einstein" },
+            { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+            { text: "The mind is everything. What you think you become.", author: "Buddha" },
+            { text: "I have not failed. I've just found 10,000 ways that won't work.", author: "Thomas A. Edison" },
+            { text: "The successful warrior is the average man, with laser-like focus.", author: "Bruce Lee" },
+            { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+            { text: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+            { text: "What you get by achieving your goals is not as important as what you become by achieving your goals.", author: "Zig Ziglar" },
+            { text: "Don’t count the days, make the days count.", author: "Muhammad Ali" },
+            { text: "Do not wait to strike till the iron is hot; but make the iron hot by striking.", author: "William Butler Yeats" },
+            { text: "Either write something worth reading or do something worth writing.", author: "Benjamin Franklin" },
+            { text: "Our greatest weakness lies in giving up. The most certain way to succeed is always to try just one more time.", author: "Thomas A. Edison" },
+            { text: "The only limit to our realization of tomorrow will be our doubts of today.", author: "Franklin D. Roosevelt" },
+            { text: "Change your thoughts and you change your world.", author: "Norman Vincent Peale" },
+            { text: "Happiness is not something readymade. It comes from your own actions.", author: "Dalai Lama" },
+            { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+            { text: "The starting point of all achievement is desire.", author: "Napoleon Hill" },
+            { text: "Setting goals is the first step in turning the invisible into the visible.", author: "Tony Robbins" },
+            { text: "You must do the things you think you cannot do.", author: "Eleanor Roosevelt" },
+            { text: "Perfection is not attainable, but if we chase perfection we can catch excellence.", author: "Vince Lombardi" },
+            { text: "The greatest discovery of all time is that a person can change his future by merely changing his attitude.", author: "Oprah Winfrey" },
+            { text: "Keep your eyes on the stars, and your feet on the ground.", author: "Theodore Roosevelt" },
+            { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+        ];
+        
+        // Daily Reflection Prompts
+        const reflectionPrompts = [
+            "What small victory did I achieve today that I can celebrate?",
+            "If I had unlimited courage, what is the first thing I would do tomorrow?",
+            "What is one limiting belief I need to challenge and replace with a positive thought?",
+            "Name three things I am genuinely grateful for right now.",
+            "Who is one person I can thank or encourage today?",
+            "What energy am I bringing into this day, and is it serving me?",
+            "What challenge am I avoiding, and what is the smallest step I can take to address it?",
+            "If I were advising a friend, what wisdom would I offer them about my current situation?",
+        ];
+
+        // --- 2. DOM Element References ---
+        // Quote View
+        const quoteCard = document.getElementById('quote-card');
+        const quoteTextElement = document.getElementById('quote-text');
+        const quoteAuthorElement = document.getElementById('quote-author');
+        const newQuoteButton = document.getElementById('new-quote-btn');
+        // Reflection View
+        const reflectionCard = document.getElementById('reflection-card');
+        const reflectionPromptElement = document.getElementById('reflection-prompt');
+        const newPromptButton = document.getElementById('new-prompt-btn');
+        // Navigation
+        const navQuote = document.getElementById('nav-quote');
+        const navReflect = document.getElementById('nav-reflect');
+
+
+        // --- 3. View Management Logic ---
+
+        /**
+         * Switches the active view and handles animations.
+         * @param {'quote'|'reflect'} viewName - The view to show.
+         */
+        window.showView = function(viewName) {
+            // Get the card elements
+            const activeCard = viewName === 'quote' ? quoteCard : reflectionCard;
+            const inactiveCard = viewName === 'quote' ? reflectionCard : quoteCard;
+
+            // Update navigation styles
+            navQuote.classList.toggle('active', viewName === 'quote');
+            navReflect.classList.toggle('active', viewName === 'reflect');
+            
+            // Hide the current/inactive card with fade-out animation
+            inactiveCard.classList.add('opacity-0', 'translate-y-2');
+
+            // Wait for the fade-out to complete before swapping display properties
+            setTimeout(() => {
+                inactiveCard.classList.add('hidden');
+                activeCard.classList.remove('hidden');
+
+                // Show the active card with fade-in animation
+                // This timeout ensures the browser registers the `hidden` removal before applying the fade-in
+                setTimeout(() => {
+                    activeCard.classList.remove('opacity-0', 'translate-y-2');
+                }, 10);
+                
+            }, 300); // Match the transition duration in CSS
+        };
+
+        // --- 4. Content Logic ---
+
+        /**
+         * Selects a random quote from the array and updates the DOM.
+         */
+        function displayRandomQuote() {
+            if (quotes.length === 0) {
+                quoteTextElement.textContent = "No quotes available.";
+                quoteAuthorElement.textContent = "";
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            const randomQuote = quotes[randomIndex];
+
+            // Only apply animation if the quote card is the active view
+            if (!quoteCard.classList.contains('hidden')) {
+                quoteCard.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    quoteTextElement.textContent = randomQuote.text;
+                    quoteAuthorElement.textContent = "— " + (randomQuote.author || "Anonymous");
+                    quoteCard.classList.remove('opacity-0', 'scale-95');
+                }, 300);
+            } else {
+                // Initial load or if card is hidden
+                quoteTextElement.textContent = randomQuote.text;
+                quoteAuthorElement.textContent = "— " + (randomQuote.author || "Anonymous");
+            }
+        }
+        
+        /**
+         * Selects a random reflection prompt and updates the DOM.
+         */
+        function displayRandomPrompt() {
+            if (reflectionPrompts.length === 0) {
+                reflectionPromptElement.textContent = "No prompts available.";
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * reflectionPrompts.length);
+            const randomPrompt = reflectionPrompts[randomIndex];
+            
+            // Apply animation
+            reflectionCard.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                reflectionPromptElement.textContent = randomPrompt;
+                reflectionCard.classList.remove('opacity-0', 'scale-95');
+            }, 300);
+        }
+
+        // --- 5. Event Listeners and Initialization ---
+
+        // Event listeners
+        newQuoteButton.addEventListener('click', displayRandomQuote);
+        newPromptButton.addEventListener('click', displayRandomPrompt);
+
+        // Call functions when the page loads
+        window.onload = function() {
+            displayRandomQuote();
+            displayRandomPrompt(); // Load the first prompt so it's ready when the user clicks 'Reflect'
+            // Ensure the initial view is correctly set up
+            quoteCard.classList.remove('opacity-0', 'translate-y-2', 'scale-95'); 
+            quoteCard.classList.add('opacity-100');
+        };
+        
+    </script>
+</body>
+</html>
